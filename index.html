@@ -642,7 +642,14 @@
   addEventListener('resize',updateProgress);
   updateProgress();
 
-  els.start.value=new Date().toISOString().slice(0,10);
+  (function setDefaultStart(){
+    const now=new Date();now.setHours(0,0,0,0);
+    const y=now.getFullYear(),m=now.getMonth();
+    const cands=[new Date(y,m,1),new Date(y,m,15),new Date(y,m+1,1),new Date(y,m+1,15)];
+    const next=cands.find(c=>c>=now)||cands[0];
+    const p=n=>String(n).padStart(2,'0');
+    els.start.value=next.getFullYear()+'-'+p(next.getMonth()+1)+'-'+p(next.getDate());
+  })();
   els.amount.value='50,000';
   syncAmountRange();
   render();</script>

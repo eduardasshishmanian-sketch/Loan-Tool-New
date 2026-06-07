@@ -47,7 +47,7 @@
   @media(max-width:560px){.grid{grid-template-columns:1fr}}
   .field{min-width:0}
   .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:7px}
-  .field input[type=date],.field input[type=text]{width:100%;font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);background:var(--cream);border:1.5px solid var(--line);border-radius:13px;padding:13px 15px;transition:.2s}
+  .field input[type=date],.field input[type=text]{-webkit-appearance:none;appearance:none;max-width:100%;width:100%;font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);background:var(--cream);border:1.5px solid var(--line);border-radius:13px;padding:13px 15px;transition:.2s}
   .field input:focus{outline:none;border-color:var(--moss);background:#fff;box-shadow:0 0 0 4px rgba(60,128,97,.13)}
   .amount-wrap{position:relative}
   .amount-wrap .sym{position:absolute;left:8px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--moss),var(--forest));color:#fff;font-weight:800;font-size:15px;font-family:'Bricolage Grotesque',sans-serif;pointer-events:none;box-shadow:0 4px 11px -4px rgba(28,74,57,.55)}
@@ -144,8 +144,8 @@
   .ds-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:12.5px;color:var(--forest-deep);margin-bottom:2px}
   .ds-sub{font-size:12px;color:var(--ink-soft);line-height:1.4}
 
-  .exit-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
-  .exit-row .field{flex:1;min-width:180px}
+  .exit-row{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+  .exit-row .field{min-width:0}
   .exit-btn{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;padding:13px 22px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--gold-bright),var(--gold));color:#fff;box-shadow:0 12px 24px -12px rgba(190,122,42,.8);transition:.2s;white-space:nowrap}
   .exit-btn:hover{transform:translateY(-2px)}
   .exit-result{margin-top:18px;border-radius:16px;padding:18px 20px;border:1px dashed var(--moss);background:rgba(60,128,97,.08);display:none}
@@ -163,6 +163,12 @@
   .btn-ghost{background:transparent;border-color:var(--line);color:var(--forest)}
   .btn-ghost:hover{background:#fff;border-color:var(--moss)}
   .footnote{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:22px;opacity:.85}
+  .site-footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);text-align:center}
+  .foot-links{font-size:12.5px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;color:var(--ink-soft)}
+  .foot-links .sep{color:var(--line)}
+  .foot-links a{color:var(--moss);text-decoration:none;font-weight:600}
+  .foot-links a:hover{text-decoration:underline}
+  .foot-copy{font-family:'Bricolage Grotesque',sans-serif;font-size:12px;font-weight:600;color:#8A7F6A;margin-top:9px;letter-spacing:.01em}
 
   @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   .draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 1.2s .2s ease forwards}
@@ -308,7 +314,7 @@
     <p style="color:var(--ink-soft);font-size:14px;margin-bottom:18px">Either party can give <b>3 months' written notice</b> to call the loan back. The earliest interest-preserving notice is <b>15 months</b> in (repayment lands at the 18-month lock-in). Requesting earlier still returns the Principal within 3 months — but forfeits interest. Pick a date to see what happens.</p>
     <div class="exit-row">
       <div class="field"><label for="notice">Notice given on</label><input type="date" id="notice"></div>
-      <button class="exit-btn" id="trigger">Request repayment →</button>
+      <button class="submit-btn" id="trigger">Request repayment →</button>
     </div>
     <div class="exit-result" id="exit-result">
       <div class="er-lab" id="er-lab">Repayment due</div>
@@ -321,13 +327,20 @@
     <button class="btn btn-primary" onclick="window.print()">Save / Print as PDF</button>
   </div>
 
+  <footer class="site-footer">
+    <div class="foot-links">
+      <span>Indicative terms — binding once signed</span>
+    </div>
+    <div class="foot-copy">© <span id="year">2026</span> Eduardas Shishmanian. All rights reserved.</div>
+  </footer>
+
 </div>
 
 <script>
   const fmt = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const fmtShort = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   const addMonths=(d,m)=>{const x=new Date(d);const day=x.getDate();x.setMonth(x.getMonth()+m);if(x.getDate()<day)x.setDate(0);return x;};
-  const money=(n,dp=0)=>'£'+n.toLocaleString('en-GB',{minimumFractionDigits:dp,maximumFractionDigits:dp});
+  const money=(n,dp=0)=>'£'+(Number(n)||0).toLocaleString('en-GB',{minimumFractionDigits:dp,maximumFractionDigits:dp});
 
   const RATE=0.07, mRate=RATE/12;
   let mode='monthly', term=18;
@@ -432,6 +445,7 @@
     const plotW=chartX(CHART.N)-CHART.padL;
     MILES.forEach(mo=>{
       const lab=$('ax-l-'+mo),tk=$('ax-t-'+mo);
+      if(!lab||!tk)return;
       if(mo<=term){
         const x=CHART.padL+plotW*(mo/term),end=mo===term;
         lab.setAttribute('x',x.toFixed(1));lab.setAttribute('y',(m.grayY+19).toFixed(1));
@@ -457,7 +471,7 @@
       requestAnimationFrame(loop);
     })();
   }
-  function lerpModel(a,b,e){return {gold:b.gold.map((v,i)=>a.gold[i]+(v-a.gold[i])*e),green:b.green.map((v,i)=>a.green[i]+(v-a.green[i])*e),grayY:a.grayY+(b.grayY-a.grayY)*e,Ig:a.Ig+(b.Ig-a.Ig)*e,Is:a.Is+(b.Is-a.Is)*e};}
+  function lerpModel(a,b,e){return {gold:b.gold.map((v,i)=>a.gold[i]+(v-a.gold[i])*e),green:b.green.map((v,i)=>a.green[i]+(v-a.green[i])*e),grayY:a.grayY+(b.grayY-a.grayY)*e,Ig:a.Ig+(b.Ig-a.Ig)*e,Is:a.Is+(b.Is-a.Is)*e,P:a.P+(b.P-a.P)*e};}
   function updateChart(P){
     if(!CHART.built)buildChartSkeleton();
     if(!P){['c-line','c-green','c-area'].forEach(id=>$(id).setAttribute('d',''));$('c-gray').setAttribute('y1','-10');$('c-gray').setAttribute('y2','-10');$('c-acc').textContent='';$('c-month').textContent='';$('c-principal').textContent='';$('c-prinval').textContent='';MILES.forEach(mo=>{$('ax-l-'+mo).setAttribute('opacity','0');$('ax-t-'+mo).setAttribute('opacity','0');});CHART.cur=null;return;}
@@ -537,7 +551,7 @@
   els.start.addEventListener('change',render);
   els.termInput.addEventListener('input',()=>{term=+els.termInput.value;render();});
   document.querySelectorAll('#ticks span').forEach(s=>s.addEventListener('click',()=>{term=+s.dataset.t;els.termInput.value=term;render();}));
-  els.notice.addEventListener('change',()=>{els.notice.dataset.touched='1';});
+  els.notice.addEventListener('change',()=>{els.notice.dataset.touched='1';const b=$('trigger');b.disabled=false;b.textContent='Request repayment →';});
 
   const toggle=$('toggle');
   toggle.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
@@ -547,24 +561,46 @@
   }));
 
   $('trigger').addEventListener('click',()=>{
-    const box=$('exit-result');
+    const box=$('exit-result'),btn=$('trigger');
     if(!els.notice.value){box.className='exit-result show bad';$('er-lab').textContent='Pick a date';$('er-date').textContent='—';$('er-sub').textContent='Choose the date you intend to give notice.';return;}
     if(!els.start.value){box.className='exit-result show bad';$('er-lab').textContent='Set a start date';$('er-date').textContent='—';$('er-sub').textContent='Add the loan start date first.';return;}
     const s=new Date(els.start.value+'T00:00:00');
     const n=new Date(els.notice.value+'T00:00:00');
     const floor15=addMonths(s,15), due=addMonths(n,3);
     if(n<s){box.className='exit-result show bad';$('er-lab').textContent='Invalid date';$('er-date').textContent='—';$('er-sub').textContent='Notice cannot be given before the loan starts ('+fmt(s)+').';return;}
+    let forfeit;
     if(n>=floor15){
+      forfeit=false;
       box.className='exit-result show';
       $('er-lab').textContent='Repayment due';
       $('er-date').textContent=fmt(due);
       $('er-sub').textContent='Notice on '+fmt(n)+' → the 3-month period ends '+fmt(due)+', when the full Principal plus all interest is repaid.';
     }else{
+      forfeit=true;
       box.className='exit-result show bad';
       $('er-lab').textContent='Early exit · interest forfeited';
       $('er-date').textContent=fmt(due);
       $('er-sub').textContent='This is before the 18-month lock-in, so the Principal is returned within 3 months (by '+fmt(due)+') — but all interest is forfeited. The earliest interest-preserving notice is '+fmt(floor15)+'.';
     }
+    const who=(($('l-first').value||'').trim()+' '+($('l-last').value||'').trim()).trim();
+    btn.disabled=true;btn.textContent='Sending request…';
+    const params={
+      request_type:'LOAN REPAYMENT REQUESTED',
+      lender_name:who||'(name not entered in the form above)',
+      lender_email:($('l-email').value||'').trim()||'Not provided',
+      lender_address:'REPAYMENT REQUEST — notice given '+fmt(n)+', Principal repaid by '+fmt(due)+(forfeit?' · EARLY EXIT, all interest forfeited':' · interest preserved'),
+      loan_amount:els.dAmt.textContent,
+      start_date:els.dStart.textContent,
+      loan_term:term+' months',
+      interest_mode:mode==='monthly'?'Paid monthly':'Accruing',
+      maturity_date:els.dMat.textContent,
+      monthly_interest:els.vMonthly.textContent,
+      total_interest:mode==='monthly'?$('v-monthly-total').textContent:$('v-accrued-int').textContent,
+    };
+    loadEmailJS()
+      .then(ej=>ej.send('service_hnl6ni7','template_1yhpyff',params))
+      .then(()=>{btn.textContent='Repayment requested ✓';$('er-sub').textContent+=' Eduardas has been notified of your repayment request.';})
+      .catch(()=>{btn.disabled=false;btn.textContent='Request repayment →';$('er-sub').textContent+=' (Couldn\u2019t send the notification automatically — please email Eduardas directly.)';});
   });
 
   // EmailJS submit
@@ -670,6 +706,7 @@
     els.start.value=next.getFullYear()+'-'+p(next.getMonth()+1)+'-'+p(next.getDate());
   })();
   els.amount.value='50,000';
+  (function(){const y=$('year');if(y)y.textContent=new Date().getFullYear();})();
   syncAmountRange();
   render();</script>
 </body>

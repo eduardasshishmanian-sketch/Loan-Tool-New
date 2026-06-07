@@ -374,16 +374,18 @@
     document.querySelectorAll('#ticks span').forEach(s=>s.classList.toggle('on',+s.dataset.t===term));
   }
 
-  const CHART={W:600,H:240,padL:8,padR:10,padT:28,padB:18,N:64,built:false,cur:null,lastGold:null,raf:null};
+  const CHART={W:600,H:240,padL:8,padR:10,padT:26,padB:30,N:64,built:false,cur:null,lastGold:null,raf:null};
+  const MILES=[18,24,30,36,42], MAXTERM=42;
   function chartX(k){const {W,padL,padR,N}=CHART;return padL+(W-padL-padR)*(k/N);}
   function chartModel(P){
     const {padT,padB,H,N}=CHART,plotH=H-padT-padB;
     const Ig=P*Math.pow(1+mRate,term)-P, Is=P*mRate*term;
-    const vBot=P-Ig*0.12, vTop=P+Ig*1.08, span=(vTop-vBot)||1;
+    const refIg=P*(Math.pow(1+mRate,MAXTERM)-1)||1;
+    const vBot=P-refIg*0.12, vTop=P+refIg*1.05, span=(vTop-vBot)||1;
     const yOf=v=>padT+plotH*(1-(v-vBot)/span);
     const grayY=yOf(P), gold=[];
     for(let k=0;k<=N;k++){const t=term*(k/N);gold.push(yOf(P*Math.pow(1+mRate,t)));}
-    const riseG=grayY-gold[N], greenEnd=grayY-riseG*0.60, green=[];
+    const greenEnd=grayY-(grayY-gold[N])*0.62, green=[];
     for(let k=0;k<=N;k++){green.push(grayY+(greenEnd-grayY)*(k/N));}
     return {gold,green,grayY,Ig,Is,P};
   }
@@ -398,6 +400,7 @@
         <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#C9852F"/><stop offset="55%" stop-color="#D89A3E"/><stop offset="100%" stop-color="#EBB861"/></linearGradient>
       </defs>
       ${grid}
+      ${MILES.map(mo=>`<line id="ax-t-${mo}" stroke="#C9BFA8" stroke-width="1.5" opacity="0"/>`).join('')}
       <path id="c-area" fill="url(#ag)"/>
       <line id="c-gray" x1="${padL}" x2="${W-padR}" stroke="#A99E84" stroke-width="2"/>
       <path id="c-green" fill="none" stroke="#3C8061" stroke-width="2.5" stroke-dasharray="7 6"/>
@@ -408,7 +411,8 @@
       <text id="c-principal" x="${padL+4}" text-anchor="start" font-family="'Bricolage Grotesque',sans-serif" font-weight="700" font-size="14" fill="#8A7F6A" paint-order="stroke" stroke="#FBF7F0" stroke-width="3" stroke-linejoin="round"></text>
       <text id="c-prinval" x="${xr}" text-anchor="end" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="16" fill="#7C7259" paint-order="stroke" stroke="#FBF7F0" stroke-width="4" stroke-linejoin="round"></text>
       <text id="c-acc" x="${xr}" text-anchor="end" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#A8651C" paint-order="stroke" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"></text>
-      <text id="c-month" x="${xr}" text-anchor="end" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#2C6249" paint-order="stroke" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"></text>`;
+      <text id="c-month" x="${xr}" text-anchor="end" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="18" fill="#2C6249" paint-order="stroke" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"></text>
+      ${MILES.map(mo=>`<text id="ax-l-${mo}" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" opacity="0"></text>`).join('')}`;
     CHART.built=true;startPulse();
   }
   function paintModel(m){
@@ -425,6 +429,21 @@
     $('c-month').setAttribute('y',(gn-13).toFixed(1));$('c-month').textContent='+'+money(m.Is,0);
     $('c-principal').setAttribute('y',(m.grayY-9).toFixed(1));$('c-principal').textContent='Principal';
     $('c-prinval').setAttribute('y',(m.grayY-9).toFixed(1));$('c-prinval').textContent=money(m.P,0);
+    const plotW=chartX(CHART.N)-CHART.padL;
+    MILES.forEach(mo=>{
+      const lab=$('ax-l-'+mo),tk=$('ax-t-'+mo);
+      if(mo<=term){
+        const x=CHART.padL+plotW*(mo/term),end=mo===term;
+        lab.setAttribute('x',x.toFixed(1));lab.setAttribute('y',(m.grayY+19).toFixed(1));
+        lab.setAttribute('text-anchor',end?'end':'middle');
+        lab.setAttribute('fill',end?'#5E4A22':'#9A8F77');
+        lab.setAttribute('font-weight',end?'800':'600');
+        lab.textContent=mo+' mo';lab.setAttribute('opacity','1');
+        tk.setAttribute('x1',x.toFixed(1));tk.setAttribute('x2',x.toFixed(1));
+        tk.setAttribute('y1',(m.grayY-3).toFixed(1));tk.setAttribute('y2',(m.grayY+5).toFixed(1));
+        tk.setAttribute('opacity',end?'0':'0.65');
+      }else{lab.setAttribute('opacity','0');lab.textContent='';tk.setAttribute('opacity','0');}
+    });
   }
   let pulseRunning=false;
   function startPulse(){
@@ -441,7 +460,7 @@
   function lerpModel(a,b,e){return {gold:b.gold.map((v,i)=>a.gold[i]+(v-a.gold[i])*e),green:b.green.map((v,i)=>a.green[i]+(v-a.green[i])*e),grayY:a.grayY+(b.grayY-a.grayY)*e,Ig:a.Ig+(b.Ig-a.Ig)*e,Is:a.Is+(b.Is-a.Is)*e};}
   function updateChart(P){
     if(!CHART.built)buildChartSkeleton();
-    if(!P){['c-line','c-green','c-area'].forEach(id=>$(id).setAttribute('d',''));$('c-gray').setAttribute('y1','-10');$('c-gray').setAttribute('y2','-10');$('c-acc').textContent='';$('c-month').textContent='';$('c-principal').textContent='';$('c-prinval').textContent='';CHART.cur=null;return;}
+    if(!P){['c-line','c-green','c-area'].forEach(id=>$(id).setAttribute('d',''));$('c-gray').setAttribute('y1','-10');$('c-gray').setAttribute('y2','-10');$('c-acc').textContent='';$('c-month').textContent='';$('c-principal').textContent='';$('c-prinval').textContent='';MILES.forEach(mo=>{$('ax-l-'+mo).setAttribute('opacity','0');$('ax-t-'+mo).setAttribute('opacity','0');});CHART.cur=null;return;}
     const target=chartModel(P);
     if(!CHART.cur){CHART.cur=target;paintModel(target);$('c-line').classList.add('draw');return;}
     if(CHART.raf)cancelAnimationFrame(CHART.raf);
